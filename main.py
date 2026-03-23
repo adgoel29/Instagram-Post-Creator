@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 from dotenv import load_dotenv
 
 from models import GenerateRequest, GenerateResponse, PostRequest, PostResponse
@@ -17,6 +18,11 @@ app = FastAPI(
 )
 os.makedirs("static/images", exist_ok=True)  # create folder at startup if it doesn't exist
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=FileResponse, tags=["Frontend"])
+async def serve_frontend():
+    """Serve the frontend UI."""
+    return FileResponse("index.html")
 
 init_db()
 

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Post Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #fafafa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        /* ========== GENERATE SECTION ========== */
+        .generate-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 60px;
+        }
+
+        .generate-card {
+            width: 380px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #262626;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dbdbdb;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #0095f6;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #0095f6;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0084d9;
+        }
+
+        .btn-primary:disabled {
+            background-color: #b3d9ff;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #262626;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+
+        .error-message {
+            color: #dc2626;
+            font-size: 12px;
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #fee2e2;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== RESULT SECTION ========== */
+        .result-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 60px;
+        }
+
+        .result-content {
+            display: none;
+        }
+
+        .result-content.show {
+            display: block;
+        }
+
+        /* ========== POST CARD ========== */
+        .post-card {
+            width: 380px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .post-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .post-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .post-avatar-ring {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .post-header-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post-username {
+            font-size: 12px;
+            font-weight: 600;
+            color: #262626;
+        }
+
+        .post-subtitle {
+            font-size: 11px;
+            color: #65676b;
+        }
+
+        .post-menu {
+            font-size: 16px;
+            color: #262626;
+            cursor: pointer;
+        }
+
+        .post-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background-color: #f0f0f0;
+        }
+
+        .post-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+        }
+
+        .post-actions-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: #262626;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .action-icon:hover svg {
+            stroke: #0095f6;
+        }
+
+        .post-likes {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 16px;
+            color: #262626;
+        }
+
+        .post-caption {
+            padding: 0 16px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #262626;
+        }
+
+        .post-caption strong {
+            font-weight: 600;
+        }
+
+        .post-hashtags {
+            padding: 4px 16px;
+            font-size: 12px;
+            color: #0095f6;
+        }
+
+        .post-hashtags span {
+            margin-right: 6px;
+        }
+
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 11px;
+            color: #65676b;
+        }
+
+        .status-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .status-badge.posted {
+            background-color: #4CAF50;
+        }
+
+        .status-badge.draft {
+            background-color: #FF9800;
+        }
+
+        .publish-button {
+            margin-top: 16px;
+            padding: 10px 16px;
+            background-color: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .publish-button:hover {
+            background-color: #0084d9;
+        }
+
+        .success-message {
+            color: #4CAF50;
+            font-size: 12px;
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #f1f8f4;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        /* ========== PREVIOUS POSTS SECTION ========== */
+        .previous-posts-section {
+            margin-bottom: 40px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #262626;
+        }
+
+        .btn-refresh {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            color: #262626;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-refresh:hover {
+            background-color: #e0e0e0;
+        }
+
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .posts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .posts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .generate-card {
+                width: 100%;
+            }
+
+            .post-card {
+                width: 100%;
+            }
+        }
+
+        .small-post-card {
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            border: 1px solid #dbdbdb;
+            transition: transform 0.2s;
+        }
+
+        .small-post-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .small-post-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background-color: #f0f0f0;
+        }
+
+        .small-post-info {
+            padding: 12px;
+        }
+
+        .small-post-topic {
+            font-size: 13px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .small-post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .small-post-timestamp {
+            font-size: 11px;
+            color: #65676b;
+        }
+
+        .no-posts-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #65676b;
+            font-size: 14px;
+        }
+
+        /* ========== MODAL ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #262626;
+            background: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background-color: #f0f0f0;
+            border-radius: 50%;
+        }
+
+        .publish-button:disabled {
+            background-color: #b3d9ff;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Instagram Post Generator</h1>
+        </header>
+
+        <!-- GENERATE SECTION -->
+        <div class="generate-section">
+            <div class="generate-card">
+                <form id="generateForm">
+                    <div class="form-group">
+                        <label for="topic">Topic</label>
+                        <input 
+                            type="text" 
+                            id="topic" 
+                            name="topic" 
+                            placeholder="e.g. sunset photography"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="tone">Tone</label>
+                        <input 
+                            type="text" 
+                            id="tone" 
+                            name="tone" 
+                            placeholder="e.g. professional, casual, funny, inspiring"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                        Generate Post
+                    </button>
+                </form>
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+        </div>
+
+        <!-- RESULT SECTION -->
+        <div class="result-section">
+            <div id="resultContent" class="result-content"></div>
+        </div>
+
+        <!-- PREVIOUS POSTS SECTION -->
+        <div class="previous-posts-section">
+            <div class="section-header">
+                <h2>Previous Posts</h2>
+                <button class="btn-refresh" id="refreshBtn">Refresh</button>
+            </div>
+            <div id="postsGrid" class="posts-grid"></div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+        <div class="modal-content" id="modalContent">
+            <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        // ========== CREATE POST CARD HTML ==========
+        function createPostCardHTML(post, includePublishBtn = false) {
+            const hashtags = Array.isArray(post.hashtags) ? post.hashtags : [];
+            const hashtagsHTML = hashtags.length > 0 
+                ? `<div class="post-hashtags">${hashtags.map(tag => `<span>${tag}</span>`).join('')}</div>`
+                : '';
+            
+            const statusClass = post.status === 'posted' ? 'posted' : 'draft';
+            const createdAt = new Date(post.created_at).toLocaleDateString();
+            
+            let publishBtn = '';
+            if (includePublishBtn && post.status === 'draft') {
+                publishBtn = `<button class="publish-button" onclick="publishPost(${post.id})">Publish Post</button>`;
+            }
+
+            let successMsg = '';
+            if (includePublishBtn && post.status === 'posted') {
+                successMsg = '<div class="success-message" id="successMsg" style="display: none;">Successfully published!</div>';
+            }
+
+            return `
+                <div class="post-card">
+                    <div class="post-card-header">
+                        <div class="post-header-left">
+                            <div class="post-avatar-ring">AI</div>
+                            <div class="post-header-info">
+                                <div class="post-username">ai.postgen</div>
+                                <div class="post-subtitle">AI Generated</div>
+                            </div>
+                        </div>
+                        <div class="post-menu">···</div>
+                    </div>
+                    <img class="post-image" src="${post.image_url}" alt="Generated post image">
+                    <div class="post-actions">
+                        <div class="post-actions-left">
+                            <div class="action-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                            </div>
+                            <div class="action-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8.5 8.5z"></path>
+                                </svg>
+                            </div>
+                            <div class="action-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M22 2L11 13m11-11l-6.005 19.386m0 0l-5.602-6.72m5.602 6.72l-4.357-6.721"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.3-1.54c-.38-.48-1.02-.48-1.4 0-.38.48-.38 1.24 0 1.72l2 2.46c.38.48 1.02.48 1.4 0L17.6 9.9c.38-.48.38-1.24 0-1.72-.38-.48-1.02-.48-1.4 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="post-likes">1,234 likes</div>
+                    <div class="post-caption"><strong>ai.postgen</strong> ${post.caption}</div>
+                    ${hashtagsHTML}
+                    <div class="post-footer">
+                        <span>${createdAt}</span>
+                        <span class="status-badge ${statusClass}">${post.status.toUpperCase()}</span>
+                    </div>
+                    ${publishBtn}
+                    ${successMsg}
+                </div>
+            `;
+        }
+
+        // ========== GENERATE POST ==========
+        document.getElementById('generateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const topic = document.getElementById('topic').value.trim();
+            const tone = document.getElementById('tone').value;
+            const generateBtn = document.getElementById('generateBtn');
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (!topic || !tone) {
+                errorMessage.textContent = 'Please fill in all fields';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="loading-spinner"></span>Generating...';
+            errorMessage.classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/generate-post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, tone })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to generate post');
+                }
+
+                const post = await response.json();
+                
+                // Display result
+                const resultContent = document.getElementById('resultContent');
+                resultContent.innerHTML = createPostCardHTML(post, true);
+                resultContent.classList.add('show');
+
+                // Refresh previous posts list
+                fetchAndDisplayPosts();
+                
+                // Reset form
+                document.getElementById('generateForm').reset();
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.add('show');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = 'Generate Post';
+            }
+        });
+
+        // ========== PUBLISH POST ==========
+        async function publishPost(postId) {
+            const publishBtn = event.target;
+            publishBtn.disabled = true;
+            publishBtn.textContent = 'Publishing...';
+
+            try {
+                const response = await fetch(`${API_BASE}/post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ post_id: postId })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to publish post');
+                }
+
+                // Update UI
+                const successMsg = document.getElementById('successMsg');
+                if (successMsg) {
+                    successMsg.style.display = 'block';
+                }
+
+                // Update status badge
+                const statusBadge = document.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.classList.remove('draft');
+                    statusBadge.classList.add('posted');
+                    statusBadge.textContent = 'POSTED';
+                }
+
+                // Hide publish button
+                publishBtn.style.display = 'none';
+
+                // Refresh posts grid
+                setTimeout(() => {
+                    fetchAndDisplayPosts();
+                }, 1500);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Publish Post';
+            }
+        }
+
+        // ========== FETCH AND DISPLAY PREVIOUS POSTS ==========
+        async function fetchAndDisplayPosts() {
+            try {
+                const response = await fetch(`${API_BASE}/posts`);
+                if (!response.ok) throw new Error('Failed to fetch posts');
+                
+                const posts = await response.json();
+                displayPosts(posts);
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+            }
+        }
+
+        function displayPosts(posts) {
+            const postsGrid = document.getElementById('postsGrid');
+            
+            if (!posts || posts.length === 0) {
+                postsGrid.innerHTML = '<div class="no-posts-message">No posts yet. Generate your first post above.</div>';
+                return;
+            }
+
+            postsGrid.innerHTML = posts.map(post => `
+                <div class="small-post-card" onclick="openModal(${post.id})">
+                    <img class="small-post-image" src="${post.image_url}" alt="${post.topic}">
+                    <div class="small-post-info">
+                        <div class="small-post-topic">${post.topic}</div>
+                        <div class="small-post-footer">
+                            <span class="small-post-timestamp">${new Date(post.created_at).toLocaleDateString()}</span>
+                            <span class="status-badge ${post.status === 'posted' ? 'posted' : 'draft'}">${post.status.toUpperCase()}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ========== MODAL ==========
+        function openModal(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+                ${createPostCardHTML(post, true)}
+            `;
+            document.getElementById('modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+        }
+
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        // ========== INITIALIZATION ==========
+        let posts = [];
+
+        document.getElementById('refreshBtn').addEventListener('click', fetchAndDisplayPosts);
+
+        // Load posts on page load
+        fetchAndDisplayPosts().then(() => {
+            setInterval(async () => {
+                const response = await fetch(`${API_BASE}/posts`);
+                if (response.ok) {
+                    posts = await response.json();
+                }
+            }, 1000);
+        });
+
+        // Keep posts in memory
+        (async () => {
+            const response = await fetch(`${API_BASE}/posts`);
+            if (response.ok) {
+                posts = await response.json();
+            }
+        })();
+    </script>
+</body>
+</html>
