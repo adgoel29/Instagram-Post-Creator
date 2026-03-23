@@ -1,8 +1,7 @@
 import os
 import json
 import re
-import base64
-from io import BytesIO
+import uuid
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from langchain_core.prompts import ChatPromptTemplate
 from huggingface_hub import InferenceClient
@@ -127,10 +126,8 @@ def generate_image(topic: str, tone: str) -> str:
                 f"Ensure your HuggingFace token has access to image generation models."
             )
     
-    # Convert PIL image to base64 PNG
-    image.save("output.png")
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    img_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    
-    return img_b64
+    # Save image to disk
+    os.makedirs("static/images", exist_ok=True)
+    filename = f"static/images/{uuid.uuid4()}.png"
+    image.save(filename)
+    return filename

@@ -1,5 +1,6 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from models import GenerateRequest, GenerateResponse
@@ -13,10 +14,12 @@ app = FastAPI(
     description="Generate Instagram posts with AI-powered captions and images using HuggingFace models",
     version="1.0.0"
 )
+os.makedirs("static/images", exist_ok=True)  # create folder at startup if it doesn't exist
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.post("/generate-post", response_model=GenerateResponse, tags=["Post Generation"])
-async def generate_post(request: GenerateRequest):
+async def generate_post(request: GenerateRequest, http_request: Request):
     """
     Generate a new Instagram post with AI caption and image.
     
@@ -32,14 +35,18 @@ async def generate_post(request: GenerateRequest):
         hashtags = caption_data["hashtags"]
         
         # Call Image Agent
-        image_base64 = generate_image(request.topic, request.tone)
+        filename = generate_image(request.topic, request.tone)
+        
+        # Build full URL
+        base_url = str(http_request.base_url).rstrip("/")
+        image_url = f"{base_url}/{filename}"
         
         return GenerateResponse(
             topic=request.topic,
             tone=request.tone,
             caption=caption,
             hashtags=hashtags,
-            image_base64=image_base64
+            image_url=image_url
         )
     except ValueError as e:
         raise HTTPException(status_code=500, detail=f"JSON parsing error: {str(e)}")

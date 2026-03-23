@@ -14,4 +14,4 @@ class GenerateResponse(BaseModel):
     tone: str
     caption: str
     hashtags: List[str]
-    image_base64: str
+    image_url: str
