@@ -48,39 +48,151 @@ JSON:"""
     )
     
     prompt = prompt_template.format(topic=topic, tone=tone)
-    response = model.invoke(prompt)
     
-    # Extract JSON from response
-    json_str = extract_json_from_response(response.content)
-    caption_data = json.loads(json_str)
+    try:
+        response = model.invoke(prompt)
+        
+        # Extract JSON from response
+        json_str = extract_json_from_response(response.content)
+        caption_data = json.loads(json_str)
+        
+        # Validate the response structure
+        if "caption" not in caption_data or "hashtags" not in caption_data:
+            raise ValueError("Response missing required 'caption' or 'hashtags' fields")
+        
+        # Ensure hashtags is a list
+        if not isinstance(caption_data["hashtags"], list):
+            caption_data["hashtags"] = [str(caption_data["hashtags"])]
+        
+        return caption_data
     
-    return caption_data
+    except (json.JSONDecodeError, ValueError) as e:
+        # Fallback: Generate a basic caption and hashtags
+        print(f"Warning: JSON parsing failed for topic '{topic}' and tone '{tone}': {str(e)}")
+        print("Using fallback caption generation...")
+        
+        fallback_caption = f"Discover the beauty of {topic}. {tone.capitalize()} perspective on this amazing subject. #explore #create"
+        fallback_hashtags = generate_fallback_hashtags(topic, tone)
+        
+        return {
+            "caption": fallback_caption,
+            "hashtags": fallback_hashtags
+        }
+
+
+def generate_fallback_hashtags(topic: str, tone: str) -> list:
+    """
+    Generate fallback hashtags if AI generation fails.
+    
+    Args:
+        topic: The topic for the Instagram post
+        tone: The tone of the post
+    
+    Returns:
+        List of hashtags
+    """
+    # Base hashtags from topic
+    topic_tags = []
+    for word in topic.lower().split():
+        if len(word) > 3:  # Only add meaningful words
+            topic_tags.append(f"#{word}")
+    
+    # Tone-based hashtags
+    tone_tags = {
+        "sad": ["#emotional", "#reflective", "#deep"],
+        "depressing": ["#emotional", "#reflective", "#deep"],
+        "happy": ["#positive", "#joy", "#vibrant"],
+        "casual": ["#casual", "#everyday", "#relatable"],
+        "professional": ["#professional", "#quality", "#expert"],
+        "funny": ["#humor", "#funny", "#laugh"],
+        "inspiring": ["#inspiring", "#motivation", "#impact"],
+    }
+    
+    tone_based = tone_tags.get(tone.lower(), ["#creative", "#content"])
+    
+    # Combine and limit to 8-10 tags
+    all_tags = topic_tags + tone_based + ["#instagram", "#explore"]
+    return list(dict.fromkeys(all_tags))[:10]  # Remove duplicates and limit to 10
 
 
 def extract_json_from_response(response_text: str) -> str:
     """
-    Extract JSON from the model's response.
-    Try to find ```json ... ``` block first, then fallback to raw JSON.
+    Extract JSON from the model's response with multiple fallback strategies.
+    Try to find ```json ... ``` block first, then fallback to raw JSON extraction.
     
     Args:
         response_text: The raw response from the model
     
     Returns:
         JSON string
+    
+    Raises:
+        ValueError: If JSON cannot be extracted or parsed
     """
     
+    # Try 1: Look for ```json ... ``` code block
     json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
     if json_match:
-        return json_match.group(1).strip()
+        json_str = json_match.group(1).strip()
+        try:
+            json.loads(json_str)  # Validate it's valid JSON
+            return json_str
+        except json.JSONDecodeError:
+            pass  # Continue to next strategy
     
-    # Fallback: find first { and last }
+    # Try 2: Look for ``` ... ``` code block (without json label)
+    json_match = re.search(r'```\s*(.*?)\s*```', response_text, re.DOTALL)
+    if json_match:
+        json_str = json_match.group(1).strip()
+        try:
+            json.loads(json_str)  # Validate it's valid JSON
+            return json_str
+        except json.JSONDecodeError:
+            pass  # Continue to next strategy
+    
+    # Try 3: Find first { and last } - basic extraction
     start_idx = response_text.find('{')
     end_idx = response_text.rfind('}')
     
     if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
-        return response_text[start_idx:end_idx + 1]
+        json_str = response_text[start_idx:end_idx + 1].strip()
+        try:
+            json.loads(json_str)  # Validate it's valid JSON
+            return json_str
+        except json.JSONDecodeError:
+            # Try to fix common issues
+            json_str = fix_json_formatting(json_str)
+            try:
+                json.loads(json_str)  # Validate again
+                return json_str
+            except json.JSONDecodeError:
+                pass  # Continue to next strategy
     
-    raise ValueError("Could not extract JSON from model response")
+    raise ValueError(f"Could not extract valid JSON from model response: {response_text[:200]}...")
+
+
+def fix_json_formatting(json_str: str) -> str:
+    """
+    Fix common JSON formatting issues from model responses.
+    
+    Args:
+        json_str: Potentially malformed JSON string
+    
+    Returns:
+        Fixed JSON string
+    """
+    # Remove trailing commas before ] or }
+    json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+    
+    # Fix unquoted keys (basic approach)
+    json_str = re.sub(r'(\{|,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', json_str)
+    
+    # Fix single quotes to double quotes (be careful with apostrophes in text)
+    # Only fix quotes that are clearly JSON structure quotes
+    json_str = re.sub(r":\s*'([^']*)'", r': "\1"', json_str)
+    json_str = re.sub(r"'([^']*)',", r'"\1",', json_str)
+    
+    return json_str
 
 
 def setup_image_agent():
