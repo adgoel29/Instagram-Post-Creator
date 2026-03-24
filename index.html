@@ -706,12 +706,15 @@
                     successMsg.style.display = 'block';
                 }
 
-                // Update status badge
-                const statusBadge = document.querySelector('.status-badge');
-                if (statusBadge) {
-                    statusBadge.classList.remove('draft');
-                    statusBadge.classList.add('posted');
-                    statusBadge.textContent = 'POSTED';
+                // Update status badge - find the one within the same post card
+                const postCard = publishBtn.closest('.post-card');
+                if (postCard) {
+                    const statusBadge = postCard.querySelector('.status-badge');
+                    if (statusBadge) {
+                        statusBadge.classList.remove('draft');
+                        statusBadge.classList.add('posted');
+                        statusBadge.textContent = 'POSTED';
+                    }
                 }
 
                 // Hide publish button
